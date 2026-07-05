@@ -5,14 +5,16 @@ import {
   ApplicationRef,
   createComponent,
   EnvironmentInjector,
+  OnDestroy,
 } from "@angular/core";
 import { ConfigService } from "tabby-core";
 import { BaseTerminalTabComponent } from "tabby-terminal";
 import { PanelPosition } from "../config";
 import { AIPanelComponent } from "../components/agent_panel";
+import { Subscription } from "rxjs";
 
 @Injectable()
-export class AIAgentPanelService {
+export class AIAgentPanelService implements OnDestroy {
   private panelRefs = new Map<
     BaseTerminalTabComponent<any>,
     ComponentRef<AIPanelComponent>
@@ -25,13 +27,22 @@ export class AIAgentPanelService {
       resizeObserver?: ResizeObserver;
     }
   >();
+  private configSubscription: Subscription;
 
   constructor(
     private appRef: ApplicationRef,
     private injector: Injector,
     private envInjector: EnvironmentInjector,
     private config: ConfigService,
-  ) {}
+  ) {
+    this.configSubscription = this.config.changed$.subscribe(() => {
+      this.reLayoutAllPanels();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.configSubscription.unsubscribe();
+  }
 
   toggle(terminal: BaseTerminalTabComponent<any>): void {
     const isVisible = this.panelVisible.get(terminal) ?? false;
@@ -99,6 +110,31 @@ export class AIAgentPanelService {
     this.panelVisible.set(terminal, false);
     this.updateTerminalLayout(terminal, false);
     terminal.frontend?.focus();
+  }
+
+  // Re-apply layout for all visible panels when config changes
+  private reLayoutAllPanels(): void {
+    for (const [terminal, ref] of this.panelRefs.entries()) {
+      if (!this.panelVisible.get(terminal)) {
+        continue;
+      }
+
+      const panelElement = ref.location.nativeElement as HTMLElement;
+      const { baseCSS } = this.buildPanelStyles(this.getPanelConfig());
+
+      panelElement.style.cssText = `
+              position: absolute;
+              z-index: 100;
+              display: flex;
+              flex-direction: column;
+              pointer-events: auto;
+              background: var(--theme-bg);
+              ${baseCSS}
+          `;
+
+      this.updateTerminalLayout(terminal, true);
+      ref.changeDetectorRef.detectChanges();
+    }
   }
 
   approvePendingCommand(terminal: BaseTerminalTabComponent<any>): void {
