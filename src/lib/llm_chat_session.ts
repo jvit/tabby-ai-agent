@@ -272,12 +272,18 @@ export class LLMChatSession {
         await pushHistory({ role: "reasoning", content: fullReasoning });
 
       if (finishReason === "tool_calls") {
+        // Snapshot history length before pushing the assistant tool_calls message.
+        // If we are aborted mid-tool-execution, we must roll back to keep the
+        // conversation valid – an assistant message with tool_calls MUST be
+        // followed by exactly one tool message per tool_call.
+        const historyBeforeToolCalls = this.history.length;
         await pushHistory({
           role: "assistant",
           content: fullContent.trim() ? fullContent : null,
           tool_calls: Object.values(requestedToolCalls),
         });
-        for (const tc of Object.values(requestedToolCalls)) {
+        try {
+          for (const tc of Object.values(requestedToolCalls)) {
           if (!this.tools) continue;
           const name = tc.function.name || "unknown";
           const args = JSON.parse(tc.function.arguments);
@@ -367,6 +373,15 @@ export class LLMChatSession {
           if (stopAfterToolResult) {
             return fullContent;
           }
+        }
+        } catch (error) {
+          // If the user aborted during tool execution, roll back history to
+          // remove the orphaned assistant tool_calls message (and any partial
+          // tool messages), keeping the conversation valid for the next request.
+          if (this.isAbortError(error)) {
+            this.history.splice(historyBeforeToolCalls);
+          }
+          throw error;
         }
         continue;
       } else if (finishReason === "stop") {
