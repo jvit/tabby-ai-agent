@@ -13,6 +13,7 @@ export interface AIAgentConfig {
   additionalSystemPrompt: string;
   panelPosition: PanelPosition;
   panelSizePercent: number;
+  hideTerminalOutput: boolean;
 }
 
 export class AIAgentConfigProvider extends ConfigProvider {
@@ -27,6 +28,7 @@ export class AIAgentConfigProvider extends ConfigProvider {
       additionalSystemPrompt: "",
       panelPosition: "right" as PanelPosition,
       panelSizePercent: 40,
+      hideTerminalOutput: false,
     },
     hotkeys: {
       "toggle-ai-agent-panel": ["Ctrl-Alt-A"],

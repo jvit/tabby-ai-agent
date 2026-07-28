@@ -197,7 +197,16 @@
                 </div>
               </ng-template>
             </div>
-            <pre *ngIf="toolCall.output">{{ toolCall.output }}</pre>
+            <div class="tool-result-accordion" *ngIf="hideTerminalOutput && toolCall.output; else plainToolOutput">
+              <button class="tool-result-toggle" type="button" (click)="toggleToolCallOutputCollapsed(toolCall.id)">
+                <i class="fas" [class.fa-chevron-right]="toolCall.outputCollapsed" [class.fa-chevron-down]="!toolCall.outputCollapsed"></i>
+                <span>Terminal output ({{ toolCall.output.split('\n').length }} lines)</span>
+              </button>
+              <pre *ngIf="!toolCall.outputCollapsed">{{ toolCall.output }}</pre>
+            </div>
+            <ng-template #plainToolOutput>
+              <pre *ngIf="toolCall.output">{{ toolCall.output }}</pre>
+            </ng-template>
             <div class="tool-error text-danger" *ngIf="toolCall.errorMessage">
               {{ toolCall.errorMessage }}
             </div>

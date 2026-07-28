@@ -45,6 +45,7 @@ interface ToolCallViewModel {
   estimatedRunTime: string | null;
   question: string | null;
   choices: string[];
+  outputCollapsed?: boolean;
 }
 
 interface PendingUserInputRequest {
@@ -117,6 +118,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.config.store.aiAgent.additionalRequestParametersText ??= "";
     this.config.store.aiAgent.additionalRequestParameters ??= {};
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
+    this.config.store.aiAgent.hideTerminalOutput ??= false;
     this.initializeSession();
   }
 
@@ -438,6 +440,14 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     );
   }
 
+  toggleToolCallOutputCollapsed(toolCallId: string): void {
+    this.toolCalls = this.toolCalls.map((tc) =>
+      tc.id === toolCallId
+        ? { ...tc, outputCollapsed: !tc.outputCollapsed }
+        : tc,
+    );
+  }
+
   getHotkeyLabel(hotkeyId: string): string {
     const keys = this.config.store.hotkeys?.[hotkeyId];
     return keys?.length ? keys[0].replace(/-/g, '+') : '';
@@ -661,6 +671,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
       status: state.status,
       output: state.output,
       errorMessage: state.errorMessage,
+      outputCollapsed: true,
       command: this.getToolArg(args, "command"),
       riskLevel: this.getToolArg(args, "risk_level"),
       explanation: this.getToolArg(args, "explanation"),
@@ -731,6 +742,10 @@ export class AIPanelComponent implements OnInit, OnDestroy {
 
   private isPlainObject(value: unknown): value is Record<string, any> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  get hideTerminalOutput(): boolean {
+    return !!this.config.store.aiAgent?.hideTerminalOutput;
   }
 
   private getNumericToolArg(args: any, key: string): string | null {
