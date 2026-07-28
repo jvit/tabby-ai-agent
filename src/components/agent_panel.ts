@@ -81,6 +81,8 @@ export class AIPanelComponent implements OnInit, OnDestroy {
   @ViewChild("promptInput")
   promptInput?: ElementRef<HTMLTextAreaElement>;
 
+  private userIsNearBottom = true;
+
   draftPrompt = "";
   messages: ChatMessageViewModel[] = [];
   toolCalls: ToolCallViewModel[] = [];
@@ -928,7 +930,16 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     setTimeout(() => this.promptInput?.nativeElement?.focus(), 0);
   }
 
+  public onMessagesScroll(): void {
+    const container = this.messagesContainer?.nativeElement;
+    if (!container) return;
+    const threshold = 80;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    this.userIsNearBottom = distanceFromBottom < threshold;
+  }
+
   private scrollMessagesToBottom(): void {
+    if (!this.userIsNearBottom) return;
     setTimeout(() => {
       const container = this.messagesContainer?.nativeElement;
       if (container) {

@@ -32,7 +32,7 @@
     </span>
   </div>
 
-  <div #messagesContainer class="messages">
+  <div #messagesContainer class="messages" (scroll)="onMessagesScroll()">
     <div class="empty-state" *ngIf="messages.length === 0">
       <i class="fas fa-comments empty-state-icon"></i>
       <div class="empty-state-title">Try asking the agent</div>
