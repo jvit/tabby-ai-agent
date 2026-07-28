@@ -11,7 +11,7 @@
     "watch": "webpack --progress --color --watch",
     "test": "node --experimental-strip-types tests/llm_endpoint.test.ts"
   },
-  "type": "module",
+  "type": "commonjs",
   "publishConfig": {
     "access": "public"
   },
