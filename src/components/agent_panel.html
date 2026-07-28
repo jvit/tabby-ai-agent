@@ -2,9 +2,6 @@
   class="ai-panel-container"
   (click)="$event.stopPropagation()"
   (mousedown)="$event.stopPropagation()"
-  (keydown)="handleContainerKeydown($event); $event.stopPropagation()"
-  (keyup)="$event.stopPropagation()"
-  (keypress)="$event.stopPropagation()"
 >
   <div class="header">
     <div class="title">
@@ -13,7 +10,7 @@
     </div>
     <div class="header-actions ms-auto">
       <button class="btn btn-link btn-sm" type="button" (click)="clearChat()">
-        Clear
+        Clear <span class="kbd-hint">{{ getHotkeyLabel('clear-ai-agent-chat') }}</span>
       </button>
       <button class="btn btn-link btn-sm" type="button" (click)="closed.emit()">
         Close

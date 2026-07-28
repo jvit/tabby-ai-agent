@@ -20,14 +20,16 @@ export class AIAgentDecorator extends TerminalDecorator {
     this.subscribeUntilDetached(
       terminal,
       this.hotkeys.hotkey$.subscribe((hotkey) => {
-        if (hotkey === "toggle-ai-agent-panel" && terminal.hasFocus) {
+        if (hotkey === "toggle-ai-agent-panel") {
           this.panelService.toggle(terminal);
-        } else if (hotkey === "approve-ai-agent-command" && terminal.hasFocus) {
+        } else if (hotkey === "approve-ai-agent-command") {
           this.panelService.approvePendingCommand(terminal);
-        } else if (hotkey === "decline-ai-agent-command" && terminal.hasFocus) {
+        } else if (hotkey === "decline-ai-agent-command") {
           this.panelService.declinePendingCommand(terminal);
         } else if (hotkey === "stop-ai-agent-response" && terminal.hasFocus) {
           this.panelService.stopCurrentResponse(terminal);
+        } else if (hotkey === "clear-ai-agent-chat") {
+          this.panelService.clearChat(terminal);
         }
       }),
     );

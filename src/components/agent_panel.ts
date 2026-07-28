@@ -302,45 +302,6 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.cancelPendingUserInputs();
   }
 
-  handleContainerKeydown(event: KeyboardEvent): void {
-    if (this.isToggleHotkey(event)) {
-      this.closed.emit();
-    }
-  }
-
-  private isToggleHotkey(event: KeyboardEvent): boolean {
-    const keystrokes = (this.config.store as any).hotkeys?.['toggle-ai-agent-panel'] as string[] | undefined;
-    if (!keystrokes?.length) {
-      return false;
-    }
-
-    return keystrokes.some(keystroke => this.matchKeystroke(keystroke, event));
-  }
-
-  private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
-    const parts = keystroke.split('-');
-    if (parts.length < 2) {
-      return false;
-    }
-
-    const key = parts.pop()!.toLowerCase();
-    const hasCtrl = parts.includes('Ctrl');
-    const hasMeta = parts.some(p => ['⌘', 'Win', 'Super', 'Meta'].includes(p));
-    const hasAlt = parts.some(p => ['⌥', 'Alt'].includes(p));
-    const hasShift = parts.includes('Shift');
-
-    const eventKey = event.key?.toLowerCase();
-    const codeKey = event.code?.replace(/^(Key|Digit|Arrow)/, '').toLowerCase();
-
-    return (
-      event.ctrlKey === hasCtrl &&
-      event.altKey === hasAlt &&
-      event.metaKey === hasMeta &&
-      event.shiftKey === hasShift &&
-      (eventKey === key || codeKey === key)
-    );
-  }
-
   handleComposerKeydown(event: KeyboardEvent): void {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
