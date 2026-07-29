@@ -81,6 +81,8 @@ export class AIPanelComponent implements OnInit, OnDestroy {
   messagesContainer?: ElementRef<HTMLElement>;
   @ViewChild("promptInput")
   promptInput?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild("askUserInput")
+  askUserInput?: ElementRef<HTMLInputElement>;
 
   private userIsNearBottom = true;
 
@@ -957,6 +959,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
 
       this.pendingUserInputs.set(toolCallId, request);
       this.scrollMessagesToBottom();
+      setTimeout(() => this.askUserInput?.nativeElement?.focus(), 0);
     });
   }
 

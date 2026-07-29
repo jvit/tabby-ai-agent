@@ -180,6 +180,7 @@
               <ng-template #askUserFreeText>
                 <div class="ask-user-input-row">
                   <input
+                    #askUserInput
                     class="form-control form-control-sm"
                     type="text"
                     [ngModel]="getPendingUserAnswer(toolCall.id)"
@@ -198,7 +199,7 @@
                 </div>
               </ng-template>
             </div>
-            <div class="tool-result-accordion" *ngIf="hideTerminalOutput && toolCall.output; else plainToolOutput">
+            <div class="tool-result-accordion" *ngIf="hideTerminalOutput && toolCall.output && toolCall.name !== 'ask_user'; else plainToolOutput">
               <button class="tool-result-toggle" type="button" (click)="toggleToolCallOutputCollapsed(toolCall.id)">
                 <i class="fas" [class.fa-chevron-right]="toolCall.outputCollapsed" [class.fa-chevron-down]="!toolCall.outputCollapsed"></i>
                 <span>Terminal output ({{ toolCall.output.split('\n').length }} lines)</span>
