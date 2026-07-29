@@ -313,6 +313,45 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  handleContainerKeydown(event: KeyboardEvent): void {
+    event.stopPropagation();
+    for (const [hotkeyId, handler] of Object.entries(this.hotkeyHandlers)) {
+      const keystrokes = (this.config.store as any).hotkeys?.[hotkeyId] as string[] | undefined;
+      if (keystrokes?.length && keystrokes.some(k => this.matchKeystroke(k, event))) {
+        event.preventDefault();
+        handler();
+        return;
+      }
+    }
+  }
+
+  private hotkeyHandlers: Record<string, () => void> = {
+    'toggle-ai-agent-panel': () => this.closed.emit(),
+    'approve-ai-agent-command': () => this.approveLastPendingCommand(),
+    'decline-ai-agent-command': () => this.declineLastPendingCommand(),
+    'stop-ai-agent-response': () => this.stopCurrentResponse(),
+    'clear-ai-agent-chat': () => this.clearChat(),
+  };
+
+  private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
+    const parts = keystroke.split('-');
+    if (parts.length < 2) return false;
+    const key = parts.pop()!.toLowerCase();
+    const hasCtrl = parts.includes('Ctrl');
+    const hasMeta = parts.some(p => ['⌘', 'Win', 'Super', 'Meta'].includes(p));
+    const hasAlt = parts.some(p => ['⌥', 'Alt'].includes(p));
+    const hasShift = parts.includes('Shift');
+    const eventKey = event.key?.toLowerCase();
+    const codeKey = event.code?.replace(/^(Key|Digit|Arrow)/, '').toLowerCase();
+    return (
+      event.ctrlKey === hasCtrl &&
+      event.altKey === hasAlt &&
+      event.metaKey === hasMeta &&
+      event.shiftKey === hasShift &&
+      (eventKey === key || codeKey === key)
+    );
+  }
+
   autoResizeTextarea(): void {
     const textarea = this.promptInput?.nativeElement;
     if (!textarea) {

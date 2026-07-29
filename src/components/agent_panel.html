@@ -2,6 +2,7 @@
   class="ai-panel-container"
   (click)="$event.stopPropagation()"
   (mousedown)="$event.stopPropagation()"
+  (keydown)="handleContainerKeydown($event)"
 >
   <div class="header">
     <div class="title">
