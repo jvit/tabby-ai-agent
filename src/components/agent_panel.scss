@@ -37,6 +37,14 @@
         display: flex;
         align-items: center;
         gap: 4px;
+
+        .kbd-hint {
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0.5;
+            line-height: 1;
+            margin-left: 2px;
+        }
     }
 
     .btn-link {
@@ -259,6 +267,36 @@
             color: var(--theme-fg);
             text-decoration: none;
         }
+
+        .tool-result-accordion {
+            margin-top: 4px;
+        }
+
+        .tool-result-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 16px;
+            padding: 4px 0;
+            border: 0;
+            background: transparent;
+            color: var(--theme-fg);
+            font: inherit;
+            font-weight: 600;
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+
+            i {
+                width: 12px;
+                font-size: 10px;
+                color: var(--theme-fg-muted);
+            }
+
+            &:hover {
+                color: var(--theme-primary);
+            }
+        }
     }
 
     .tool-calls {
@@ -375,12 +413,25 @@
         .tool-call-actions {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
             margin-bottom: 8px;
 
-            .kbd-hint {
-                font-size: 11px;
-                color: var(--theme-fg-muted);
-                align-self: center;
+            button {
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                line-height: 1.2;
+                gap: 1px;
+
+                .btn-text {
+                    line-height: 1.4;
+                }
+
+                .kbd-hint {
+                    font-size: 10px;
+                    color: var(--theme-fg-muted);
+                    font-weight: normal;
+                }
             }
         }
 
@@ -517,6 +568,17 @@
         border-radius: 8px;
         flex-shrink: 0;
         pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1.4;
+
+        .kbd-hint {
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0.7;
+            line-height: 1;
+        }
     }
 }
 

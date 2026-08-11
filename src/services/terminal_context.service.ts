@@ -9,6 +9,32 @@ export interface TerminalContext {
   cols: number;
 }
 
+export const PROMPT_PATTERNS = [
+  /[$#>%]\s*$/,
+  /\)\s*[$#>%]\s*$/,
+  /\]\s*[$#>%]\s*$/,
+  /❯\s*$/,
+  /➜\s*$/,
+  /PS[^>]*>\s*$/i,
+  />\s*$/,
+];
+
+export const PROMPT_WITH_COMMAND_PATTERNS = [
+  /[$#>%]\s+\S/,
+  /❯\s+\S/,
+  /➜\s+\S/,
+  /PS[^>]*>\s+\S/i,
+];
+
+export function isPromptLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && PROMPT_PATTERNS.some((p) => p.test(trimmed));
+}
+
+export function isPromptWithCommand(line: string): boolean {
+  return PROMPT_WITH_COMMAND_PATTERNS.some((p) => p.test(line));
+}
+
 export interface TerminalBufferPosition {
   row: number;
 }
@@ -154,25 +180,6 @@ export class TerminalContextService {
       }
     }
 
-    const promptPatterns = [
-      /[$#>%]\s*$/, // Common shell prompts
-      /\)\s*[$#>%]\s*$/, // Prompts with parentheses (git branch, etc.)
-      /\]\s*[$#>%]\s*$/, // Prompts with brackets
-      /❯\s*$/, // Fish/Starship prompt
-      /➜\s*$/, // Oh-my-zsh prompt
-      /PS[^>]*>\s*$/i, // PowerShell prompt
-      />\s*$/, // Simple > prompt (cmd.exe, etc.)
-    ];
-
-    // Also match prompts that have a command on the same line
-    // e.g., "user@host:~$ ls -la" - the prompt + command on one line
-    const promptWithCommandPatterns = [
-      /[$#>%]\s+\S/, // Prompt followed by command
-      /❯\s+\S/,
-      /➜\s+\S/,
-      /PS[^>]*>\s+\S/i,
-    ];
-
     // Find the last line that looks like it has a prompt with a command
     // Work backwards from the second-to-last line (last line is often the current prompt)
     let commandStartIndex = -1;
@@ -186,13 +193,13 @@ export class TerminalContextService {
       }
 
       // Check if this line has a prompt with command on the same line
-      if (promptWithCommandPatterns.some((p) => p.test(line))) {
+      if (isPromptWithCommand(line)) {
         commandStartIndex = i;
         break;
       }
 
       // Check if this is a bare prompt and the next line has content (the command output started)
-      if (promptPatterns.some((p) => p.test(trimmedLine))) {
+      if (isPromptLine(trimmedLine)) {
         // This is a prompt line - check if there's content after it
         if (i + 1 < lines.length && lines[i + 1].trim()) {
           commandStartIndex = i;
@@ -210,8 +217,8 @@ export class TerminalContextService {
       const lastLine = relevantLines[relevantLines.length - 1]?.trim();
       if (
         lastLine &&
-        promptPatterns.some((p) => p.test(lastLine)) &&
-        !promptWithCommandPatterns.some((p) => p.test(lastLine))
+        isPromptLine(lastLine) &&
+        !isPromptWithCommand(lastLine)
       ) {
         relevantLines = relevantLines.slice(0, -1);
       }

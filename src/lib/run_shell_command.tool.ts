@@ -1,5 +1,6 @@
 import { BaseTerminalTabComponent } from "tabby-terminal";
 import {
+  isPromptLine,
   TerminalBufferPosition,
   TerminalContextService,
 } from "../services/terminal_context.service";
@@ -120,12 +121,21 @@ export class RunShellCommandTool implements Tool {
     const initialWaitMs = this.normalizeWaitTime(waitTimeSeconds);
     let lastOutput = "";
     let awaitingTerminalInput = false;
+    let iterations = 0;
+    const maxIterations = 60;
+    const startTime = Date.now();
+    const maxTotalTimeoutMs = 120_000;
 
     await this.sleep(initialWaitMs, context?.signal);
     lastOutput = this.getCommandOutput(startPosition);
 
-    while (true) {
+    while (iterations < maxIterations) {
+      if (Date.now() - startTime > maxTotalTimeoutMs) {
+        break;
+      }
+
       await this.sleep(1000, context?.signal);
+      iterations++;
       const output = this.getCommandOutput(startPosition);
       const needsTerminalInput = this.detectTerminalInputPrompt(output);
 
@@ -144,17 +154,40 @@ export class RunShellCommandTool implements Tool {
         });
       }
 
-      if (output !== lastOutput) {
+      if (awaitingTerminalInput) {
         lastOutput = output;
         continue;
       }
 
-      if (awaitingTerminalInput) {
-        continue;
+      // Prompt detected at the end of output → command finished
+      if (this.detectPromptReturn(output)) {
+        return output;
       }
 
-      return output;
+      // Fallback: stability check (two consecutive identical reads)
+      if (output === lastOutput) {
+        return output;
+      }
+
+      lastOutput = output;
     }
+
+    return lastOutput || "No terminal output captured.";
+  }
+
+  private detectPromptReturn(output: string): boolean {
+    const trimmed = output.trim();
+    if (!trimmed) {
+      return false;
+    }
+
+    const lines = trimmed.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length === 0) {
+      return false;
+    }
+
+    const lastLine = lines[lines.length - 1];
+    return isPromptLine(lastLine);
   }
 
   private normalizeWaitTime(waitTimeSeconds?: number): number {

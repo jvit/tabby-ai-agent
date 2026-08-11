@@ -249,6 +249,22 @@
         <span>90%</span>
       </div>
     </div>
+
+    <div class="input-wrap">
+      <label class="toggle-card">
+        <input
+          type="checkbox"
+          [ngModel]="config.store.aiAgent.hideTerminalOutput"
+          (ngModelChange)="saveHideTerminalOutput($event)"
+        />
+        <span class="toggle-copy">
+          <span class="toggle-title">Collapse terminal output behind spoiler</span>
+          <span class="toggle-description">
+            Tool results with terminal content will be collapsed into an accordion — click to expand.
+          </span>
+        </span>
+      </label>
+    </div>
   </section>
 
   <section class="settings-card">

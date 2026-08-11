@@ -13,6 +13,7 @@ export interface AIAgentConfig {
   additionalSystemPrompt: string;
   panelPosition: PanelPosition;
   panelSizePercent: number;
+  hideTerminalOutput: boolean;
 }
 
 export class AIAgentConfigProvider extends ConfigProvider {
@@ -27,11 +28,14 @@ export class AIAgentConfigProvider extends ConfigProvider {
       additionalSystemPrompt: "",
       panelPosition: "right" as PanelPosition,
       panelSizePercent: 40,
+      hideTerminalOutput: false,
     },
     hotkeys: {
       "toggle-ai-agent-panel": ["Ctrl-Alt-A"],
+      "stop-ai-agent-response": ["Ctrl-Alt-S"],
       "approve-ai-agent-command": ["Ctrl-Alt-Enter"],
       "decline-ai-agent-command": ["Ctrl-Alt-Backspace"],
+      "clear-ai-agent-chat": ["Ctrl-Alt-C"],
     },
   };
 
@@ -39,8 +43,10 @@ export class AIAgentConfigProvider extends ConfigProvider {
     [Platform.macOS]: {
       hotkeys: {
         "toggle-ai-agent-panel": ["Cmd-Shift-A"],
+        "stop-ai-agent-response": ["Ctrl-Alt-S"],
         "approve-ai-agent-command": ["Cmd-Shift-Enter"],
         "decline-ai-agent-command": ["Cmd-Shift-Backspace"],
+        "clear-ai-agent-chat": ["Cmd-Shift-C"],
       },
     },
   };

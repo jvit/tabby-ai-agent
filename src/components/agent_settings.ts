@@ -105,6 +105,11 @@ export class AIAgentSettingsComponent implements OnInit {
     await this.config.save();
   }
 
+  async saveHideTerminalOutput(value: boolean): Promise<void> {
+    this.config.store.aiAgent.hideTerminalOutput = value;
+    await this.config.save();
+  }
+
   private ensureConfigDefaults(): void {
     this.config.store.aiAgent ??= {};
     this.config.store.aiAgent.llmEndpoint ??= "";
@@ -116,6 +121,7 @@ export class AIAgentSettingsComponent implements OnInit {
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
     this.config.store.aiAgent.panelPosition ??= "right";
     this.config.store.aiAgent.panelSizePercent ??= 40;
+    this.config.store.aiAgent.hideTerminalOutput ??= false;
   }
 
   private normalizeEndpoint(value: string): string {

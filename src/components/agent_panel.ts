@@ -45,6 +45,7 @@ interface ToolCallViewModel {
   estimatedRunTime: string | null;
   question: string | null;
   choices: string[];
+  outputCollapsed?: boolean;
 }
 
 interface PendingUserInputRequest {
@@ -80,6 +81,10 @@ export class AIPanelComponent implements OnInit, OnDestroy {
   messagesContainer?: ElementRef<HTMLElement>;
   @ViewChild("promptInput")
   promptInput?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild("askUserInput")
+  askUserInput?: ElementRef<HTMLInputElement>;
+
+  private userIsNearBottom = true;
 
   draftPrompt = "";
   messages: ChatMessageViewModel[] = [];
@@ -115,6 +120,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.config.store.aiAgent.additionalRequestParametersText ??= "";
     this.config.store.aiAgent.additionalRequestParameters ??= {};
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
+    this.config.store.aiAgent.hideTerminalOutput ??= false;
     this.initializeSession();
   }
 
@@ -309,6 +315,45 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
   }
 
+  handleContainerKeydown(event: KeyboardEvent): void {
+    event.stopPropagation();
+    for (const [hotkeyId, handler] of Object.entries(this.hotkeyHandlers)) {
+      const keystrokes = (this.config.store as any).hotkeys?.[hotkeyId] as string[] | undefined;
+      if (keystrokes?.length && keystrokes.some(k => this.matchKeystroke(k, event))) {
+        event.preventDefault();
+        handler();
+        return;
+      }
+    }
+  }
+
+  private hotkeyHandlers: Record<string, () => void> = {
+    'toggle-ai-agent-panel': () => this.closed.emit(),
+    'approve-ai-agent-command': () => this.approveLastPendingCommand(),
+    'decline-ai-agent-command': () => this.declineLastPendingCommand(),
+    'stop-ai-agent-response': () => this.stopCurrentResponse(),
+    'clear-ai-agent-chat': () => this.clearChat(),
+  };
+
+  private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
+    const parts = keystroke.split('-');
+    if (parts.length < 2) return false;
+    const key = parts.pop()!.toLowerCase();
+    const hasCtrl = parts.includes('Ctrl');
+    const hasMeta = parts.some(p => ['⌘', 'Win', 'Super', 'Meta'].includes(p));
+    const hasAlt = parts.some(p => ['⌥', 'Alt'].includes(p));
+    const hasShift = parts.includes('Shift');
+    const eventKey = event.key?.toLowerCase();
+    const codeKey = event.code?.replace(/^(Key|Digit|Arrow)/, '').toLowerCase();
+    return (
+      event.ctrlKey === hasCtrl &&
+      event.altKey === hasAlt &&
+      event.metaKey === hasMeta &&
+      event.shiftKey === hasShift &&
+      (eventKey === key || codeKey === key)
+    );
+  }
+
   autoResizeTextarea(): void {
     const textarea = this.promptInput?.nativeElement;
     if (!textarea) {
@@ -434,6 +479,19 @@ export class AIPanelComponent implements OnInit, OnDestroy {
         ? { ...message, collapsed: !message.collapsed }
         : message,
     );
+  }
+
+  toggleToolCallOutputCollapsed(toolCallId: string): void {
+    this.toolCalls = this.toolCalls.map((tc) =>
+      tc.id === toolCallId
+        ? { ...tc, outputCollapsed: !tc.outputCollapsed }
+        : tc,
+    );
+  }
+
+  getHotkeyLabel(hotkeyId: string): string {
+    const keys = this.config.store.hotkeys?.[hotkeyId];
+    return keys?.length ? keys[0].replace(/-/g, '+') : '';
   }
 
   formatToolArgs(args: any): string {
@@ -654,6 +712,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
       status: state.status,
       output: state.output,
       errorMessage: state.errorMessage,
+      outputCollapsed: true,
       command: this.getToolArg(args, "command"),
       riskLevel: this.getToolArg(args, "risk_level"),
       explanation: this.getToolArg(args, "explanation"),
@@ -724,6 +783,10 @@ export class AIPanelComponent implements OnInit, OnDestroy {
 
   private isPlainObject(value: unknown): value is Record<string, any> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  get hideTerminalOutput(): boolean {
+    return !!this.config.store.aiAgent?.hideTerminalOutput;
   }
 
   private getNumericToolArg(args: any, key: string): string | null {
@@ -896,6 +959,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
 
       this.pendingUserInputs.set(toolCallId, request);
       this.scrollMessagesToBottom();
+      setTimeout(() => this.askUserInput?.nativeElement?.focus(), 0);
     });
   }
 
@@ -923,7 +987,16 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     setTimeout(() => this.promptInput?.nativeElement?.focus(), 0);
   }
 
+  public onMessagesScroll(): void {
+    const container = this.messagesContainer?.nativeElement;
+    if (!container) return;
+    const threshold = 80;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    this.userIsNearBottom = distanceFromBottom < threshold;
+  }
+
   private scrollMessagesToBottom(): void {
+    if (!this.userIsNearBottom) return;
     setTimeout(() => {
       const container = this.messagesContainer?.nativeElement;
       if (container) {
