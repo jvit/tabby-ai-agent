@@ -29,6 +29,10 @@ export class AIAgentHotkeyProvider extends HotkeyProvider {
         id: "decline-ai-agent-command",
         name: this.translate.instant("Decline AI Agent Command"),
       },
+      {
+        id: "clear-ai-agent-chat",
+        name: this.translate.instant("Clear AI Agent Chat"),
+      },
     ];
   }
 }

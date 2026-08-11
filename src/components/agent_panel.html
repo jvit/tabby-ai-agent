@@ -2,9 +2,7 @@
   class="ai-panel-container"
   (click)="$event.stopPropagation()"
   (mousedown)="$event.stopPropagation()"
-  (keydown)="handleContainerKeydown($event); $event.stopPropagation()"
-  (keyup)="$event.stopPropagation()"
-  (keypress)="$event.stopPropagation()"
+  (keydown)="handleContainerKeydown($event)"
 >
   <div class="header">
     <div class="title">
@@ -13,7 +11,7 @@
     </div>
     <div class="header-actions ms-auto">
       <button class="btn btn-link btn-sm" type="button" (click)="clearChat()">
-        Clear
+        Clear <span class="kbd-hint">{{ getHotkeyLabel('clear-ai-agent-chat') }}</span>
       </button>
       <button class="btn btn-link btn-sm" type="button" (click)="closed.emit()">
         Close
@@ -35,7 +33,7 @@
     </span>
   </div>
 
-  <div #messagesContainer class="messages">
+  <div #messagesContainer class="messages" (scroll)="onMessagesScroll()">
     <div class="empty-state" *ngIf="messages.length === 0">
       <i class="fas fa-comments empty-state-icon"></i>
       <div class="empty-state-title">Try asking the agent</div>
@@ -182,6 +180,7 @@
               <ng-template #askUserFreeText>
                 <div class="ask-user-input-row">
                   <input
+                    #askUserInput
                     class="form-control form-control-sm"
                     type="text"
                     [ngModel]="getPendingUserAnswer(toolCall.id)"
@@ -200,7 +199,16 @@
                 </div>
               </ng-template>
             </div>
-            <pre *ngIf="toolCall.output">{{ toolCall.output }}</pre>
+            <div class="tool-result-accordion" *ngIf="hideTerminalOutput && toolCall.output && toolCall.name !== 'ask_user'; else plainToolOutput">
+              <button class="tool-result-toggle" type="button" (click)="toggleToolCallOutputCollapsed(toolCall.id)">
+                <i class="fas" [class.fa-chevron-right]="toolCall.outputCollapsed" [class.fa-chevron-down]="!toolCall.outputCollapsed"></i>
+                <span>Terminal output ({{ toolCall.output.split('\n').length }} lines)</span>
+              </button>
+              <pre *ngIf="!toolCall.outputCollapsed">{{ toolCall.output }}</pre>
+            </div>
+            <ng-template #plainToolOutput>
+              <pre *ngIf="toolCall.output">{{ toolCall.output }}</pre>
+            </ng-template>
             <div class="tool-error text-danger" *ngIf="toolCall.errorMessage">
               {{ toolCall.errorMessage }}
             </div>

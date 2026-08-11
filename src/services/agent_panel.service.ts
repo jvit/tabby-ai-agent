@@ -158,6 +158,13 @@ export class AIAgentPanelService implements OnDestroy {
     }
   }
 
+  clearChat(terminal: BaseTerminalTabComponent<any>): void {
+    const panelRef = this.panelRefs.get(terminal);
+    if (panelRef?.location.nativeElement.style.display !== "none") {
+      panelRef?.instance.clearChat();
+    }
+  }
+
   detach(terminal: BaseTerminalTabComponent<any>): void {
     this.destroyLayoutObserver(terminal);
     const ref = this.panelRefs.get(terminal);

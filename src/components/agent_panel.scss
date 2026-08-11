@@ -37,6 +37,14 @@
         display: flex;
         align-items: center;
         gap: 4px;
+
+        .kbd-hint {
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0.5;
+            line-height: 1;
+            margin-left: 2px;
+        }
     }
 
     .btn-link {
@@ -258,6 +266,36 @@
             font-family: var(--monospace-font);
             color: var(--theme-fg);
             text-decoration: none;
+        }
+
+        .tool-result-accordion {
+            margin-top: 4px;
+        }
+
+        .tool-result-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 16px;
+            padding: 4px 0;
+            border: 0;
+            background: transparent;
+            color: var(--theme-fg);
+            font: inherit;
+            font-weight: 600;
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+
+            i {
+                width: 12px;
+                font-size: 10px;
+                color: var(--theme-fg-muted);
+            }
+
+            &:hover {
+                color: var(--theme-primary);
+            }
         }
     }
 
