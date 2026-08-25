@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Frontend } from "tabby-terminal";
+import { Subject } from "rxjs";
 
 export interface TerminalContext {
   content: string;
@@ -41,6 +42,61 @@ export interface TerminalBufferPosition {
 
 @Injectable({ providedIn: "root" })
 export class TerminalContextService {
+  private forceReadTopic = new Subject<Frontend>();
+
+  /**
+   * Signal listeners (e.g. a running run_shell_command wait loop) to read
+   * the terminal output immediately instead of waiting for the next poll.
+   */
+  forceReadFor(frontend: Frontend): void {
+    this.forceReadTopic.next(frontend);
+  }
+
+  /**
+   * Resolves as soon as forceReadFor is called for the given frontend, or
+   * when the timeout elapses (no event). Resolves true when triggered by a
+   * force-read event, false on timeout/abort. Signal-aware: aborts cleanly.
+   */
+  waitForForceRead(
+    frontend: Frontend,
+    timeoutMs: number,
+    signal?: AbortSignal,
+  ): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      const subscription = this.forceReadTopic.subscribe((target) => {
+        if (target === frontend) {
+          cleanup();
+          resolve(true);
+        }
+      });
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, timeoutMs);
+
+      const onAbort = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        signal?.removeEventListener("abort", onAbort);
+        subscription.unsubscribe();
+      };
+
+      if (signal) {
+        if (signal.aborted) {
+          cleanup();
+          resolve(false);
+        } else {
+          signal.addEventListener("abort", onAbort, { once: true });
+        }
+      }
+    });
+  }
+
   captureBufferPosition(frontend: Frontend): TerminalBufferPosition | null {
     const xterm = this.getXterm(frontend);
     if (!xterm) {

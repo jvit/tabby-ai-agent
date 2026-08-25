@@ -582,6 +582,20 @@
     }
 }
 
+.force-read-hint {
+    font-size: 11px;
+    opacity: 0.75;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .input-area & {
+        pointer-events: none;
+        padding-bottom: 10px;
+    }
+}
+
 @keyframes pulse {
     0%, 80%, 100% {
         transform: scale(0);

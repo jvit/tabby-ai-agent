@@ -8,7 +8,7 @@ import {
   ViewChild,
   ElementRef,
 } from "@angular/core";
-import { ConfigService } from "tabby-core";
+import { ConfigService, HotkeysService } from "tabby-core";
 import { BaseTerminalTabComponent, Frontend } from "tabby-terminal";
 import { GetTerminalLinesTool } from "../lib/get_terminal_lines.tool";
 import {
@@ -21,6 +21,7 @@ import { RunShellCommandTool } from "../lib/run_shell_command.tool";
 import { CancelCommandTool } from "../lib/cancel_command.tool";
 import { TerminalContextService } from "../services/terminal_context.service";
 import { AskUserTool } from "../lib/ask_user.tool";
+import { Subscription } from "rxjs";
 
 type ChatRole = "user" | "assistant" | "reasoning" | "tool";
 type ToolCallStatus =
@@ -105,10 +106,12 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
   >();
   private pendingUserInputs = new Map<string, PendingUserInputRequest>();
+  private hotkeySubscription: Subscription | null = null;
 
   constructor(
     private config: ConfigService,
     private terminalContext: TerminalContextService,
+    private hotkeys: HotkeysService,
   ) {}
 
   ngOnInit(): void {
@@ -122,9 +125,16 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
     this.config.store.aiAgent.hideTerminalOutput ??= false;
     this.initializeSession();
+    this.hotkeySubscription = this.hotkeys.hotkey$.subscribe((hotkey) => {
+      if (hotkey === "force-read-terminal" && this.frontend) {
+        this.terminalContext.forceReadFor(this.frontend);
+      }
+    });
   }
 
   ngOnDestroy(): void {
+    this.hotkeySubscription?.unsubscribe();
+    this.hotkeySubscription = null;
     this.currentAbortController?.abort();
     this.cancelPendingApprovals();
     this.cancelPendingUserInputs();
@@ -299,7 +309,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
 
     this.cancelPendingApprovals();
-    if (this.hasExecutingShellCommand()) {
+    if (this.hasExecutingShellCommand) {
       this.terminal?.sendInput("\x03");
     }
     this.currentAbortController?.abort();
@@ -333,6 +343,11 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     'decline-ai-agent-command': () => this.declineLastPendingCommand(),
     'stop-ai-agent-response': () => this.stopCurrentResponse(),
     'clear-ai-agent-chat': () => this.clearChat(),
+    'force-read-terminal': () => {
+      if (this.frontend) {
+        this.terminalContext.forceReadFor(this.frontend);
+      }
+    },
   };
 
   private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
@@ -889,7 +904,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     );
   }
 
-  private hasExecutingShellCommand(): boolean {
+  get hasExecutingShellCommand(): boolean {
     return this.toolCalls.some(
       (toolCall) =>
         toolCall.name === "run_shell_command" &&
