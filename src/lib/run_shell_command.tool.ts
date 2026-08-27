@@ -1,4 +1,4 @@
-import { BaseTerminalTabComponent } from "tabby-terminal";
+import { BaseTerminalTabComponent, Frontend } from "tabby-terminal";
 import {
   isPromptLine,
   TerminalBufferPosition,
@@ -108,6 +108,9 @@ export class RunShellCommandTool implements Tool {
     };
   }
 
+  private static readonly STABLE_SNAPSHOTS_REQUIRED = 3;
+  private static readonly MIN_STABLE_MS = 2000;
+
   private async waitForStableTerminalOutput(
     startPosition: TerminalBufferPosition | null,
     waitTimeSeconds?: number,
@@ -120,23 +123,33 @@ export class RunShellCommandTool implements Tool {
 
     const initialWaitMs = this.normalizeWaitTime(waitTimeSeconds);
     let lastOutput = "";
+    let stableRun = 0;
+    let stableSince = Date.now();
     let awaitingTerminalInput = false;
     let iterations = 0;
     const maxIterations = 60;
     const startTime = Date.now();
     const maxTotalTimeoutMs = 120_000;
 
-    await this.sleep(initialWaitMs, context?.signal);
-    lastOutput = this.getCommandOutput(startPosition);
+    await this.waitForPollIntervalOrForceRead(frontend, context?.signal, initialWaitMs);
+    lastOutput = this.normalizeTerminalOutput(this.getCommandOutput(startPosition).content);
 
     while (iterations < maxIterations) {
       if (Date.now() - startTime > maxTotalTimeoutMs) {
         break;
       }
 
-      await this.sleep(1000, context?.signal);
+      // Race the fixed poll delay against an external force-read signal so the
+      // user can request an immediate read of the current terminal output.
+      const wasForced = await this.waitForPollIntervalOrForceRead(
+        frontend,
+        context?.signal,
+      );
       iterations++;
-      const output = this.getCommandOutput(startPosition);
+
+      const { content: rawOutput, isAlternateScreen } =
+        this.getCommandOutput(startPosition);
+      const output = this.normalizeTerminalOutput(rawOutput);
       const needsTerminalInput = this.detectTerminalInputPrompt(output);
 
       if (needsTerminalInput && !awaitingTerminalInput) {
@@ -156,23 +169,85 @@ export class RunShellCommandTool implements Tool {
 
       if (awaitingTerminalInput) {
         lastOutput = output;
+        stableRun = 0;
         continue;
       }
 
-      // Prompt detected at the end of output → command finished
-      if (this.detectPromptReturn(output)) {
-        return output;
+      // Prompt detected at the end of output → command finished.
+      // On an alternate screen (nano/vim/htop) the prompt line never appears,
+      // so rely on the stability check plus an explicit force-read instead.
+      if (!isAlternateScreen && this.detectPromptReturn(output)) {
+        return rawOutput;
       }
 
-      // Fallback: stability check (two consecutive identical reads)
+      // An explicit user force-read means: capture the current output right now
+      // and let the agent proceed, instead of insisting on several stable reads.
+      if (wasForced && output) {
+        return rawOutput;
+      }
+
+      // Stability check: require several consecutive identical snapshots over a
+      // minimum duration so transient pauses (progress, spinners) are not
+      // mistaken for completion.
       if (output === lastOutput) {
-        return output;
+        if (stableRun === 0) {
+          stableSince = Date.now();
+        }
+        stableRun++;
+        if (
+          stableRun >= RunShellCommandTool.STABLE_SNAPSHOTS_REQUIRED &&
+          Date.now() - stableSince >= RunShellCommandTool.MIN_STABLE_MS
+        ) {
+          return rawOutput;
+        }
+      } else {
+        stableRun = 0;
       }
 
       lastOutput = output;
     }
 
     return lastOutput || "No terminal output captured.";
+  }
+
+  /**
+   * Waits either for the normal poll interval or for an external force-read of
+   * the terminal, whichever comes first. Resolves true when the force-read
+   * signal fired, false when it was the timer/abort. Aborts propagate up.
+   */
+  private waitForPollIntervalOrForceRead(
+    frontend: Frontend,
+    signal?: AbortSignal,
+    delayMs = 1000,
+  ): Promise<boolean> {
+    return Promise.race([
+      this.sleep(delayMs, signal).then(() => false),
+      this.terminalContext.waitForForceRead(frontend, 120_000, signal),
+    ]);
+  }
+
+  /**
+   * Collapse segments rewritten in-place via carriage returns (progress bars,
+   * spinners, curl -#) so only the final frame of each line matters for
+   * stability comparisons. Keeps raw newline layout otherwise.
+   */
+  private normalizeTerminalOutput(output: string): string {
+    if (!output) {
+      return "";
+    }
+
+    const lines = String(output).split(/\r?\n/);
+    const normalized: string[] = [];
+
+    for (const line of lines) {
+      if (line.includes("\r")) {
+        normalized.push(line.split("\r").pop() ?? "");
+      } else {
+        normalized.push(line);
+      }
+    }
+
+    return normalized.join("\n").replace(/[ \t\u200b]+$/gm, "");
   }
 
   private detectPromptReturn(output: string): boolean {
@@ -204,17 +279,20 @@ export class RunShellCommandTool implements Tool {
 
   private getCommandOutput(
     startPosition: TerminalBufferPosition | null,
-  ): string {
+  ): { content: string; isAlternateScreen: boolean } {
     const frontend = this.terminal.frontend;
     if (!frontend) {
-      return "";
+      return { content: "", isAlternateScreen: false };
     }
 
     const context = startPosition
       ? this.terminalContext.getContentSince(frontend, startPosition, 500)
       : this.terminalContext.getLastCommandContext(frontend, 200);
 
-    return context?.content?.trim() || "";
+    return {
+      content: context?.content?.trim() || "",
+      isAlternateScreen: context?.isAlternateScreen === true,
+    };
   }
 
   private detectTerminalInputPrompt(output: string): boolean {

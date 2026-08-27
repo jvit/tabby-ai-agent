@@ -28,6 +28,15 @@ export class AIAgentPanelService implements OnDestroy {
     }
   >();
   private configSubscription: Subscription;
+  private activeTerminal: BaseTerminalTabComponent<any> | null = null;
+
+  setActive(terminal: BaseTerminalTabComponent<any> | null): void {
+    this.activeTerminal = terminal;
+  }
+
+  isActive(terminal: BaseTerminalTabComponent<any>): boolean {
+    return this.activeTerminal === terminal;
+  }
 
   constructor(
     private appRef: ApplicationRef,

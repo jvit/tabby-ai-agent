@@ -237,15 +237,22 @@
       (input)="autoResizeTextarea()"
       (keydown)="handleComposerKeydown($event)"
     ></textarea>
-    <button
-      *ngIf="sending; else sendButton"
-      class="btn btn-outline-danger send-btn"
-      type="button"
-      (click)="stopCurrentResponse()"
-    >
-      Stop
-      <small class="kbd-hint">{{ getHotkeyLabel('stop-ai-agent-response') }}</small>
-    </button>
+      <button
+        *ngIf="sending; else sendButton"
+        class="btn btn-outline-danger send-btn"
+        type="button"
+        (click)="stopCurrentResponse()"
+      >
+        Stop
+        <small class="kbd-hint">{{ getHotkeyLabel('stop-ai-agent-response') }}</small>
+      </button>
+      <span
+        *ngIf="hasExecutingShellCommand"
+        class="force-read-hint kbd-hint"
+        title="Read the current terminal output immediately"
+      >
+        Read output now: {{ getHotkeyLabel('force-read-terminal') }}
+      </span>
     <ng-template #sendButton>
       <button
         class="btn btn-primary send-btn"

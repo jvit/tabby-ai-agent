@@ -33,6 +33,10 @@ export class AIAgentHotkeyProvider extends HotkeyProvider {
         id: "clear-ai-agent-chat",
         name: this.translate.instant("Clear AI Agent Chat"),
       },
+      {
+        id: "force-read-terminal",
+        name: this.translate.instant("Force Read Terminal"),
+      },
     ];
   }
 }

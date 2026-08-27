@@ -18,3 +18,4 @@ Rules:
   - estimated_run_time: expected initial wait in seconds before output is checked
 - Do not run destructive, irreversible, or system-changing commands unless the user clearly asked for them or they are required to complete the task.
 - If a command appears stuck and should be interrupted, use cancel_command.
+- The user can force you to read terminal output immediately via the force-read shortcut; treat it as a nudge to run get_terminal_lines now, not as a command cancellation.
