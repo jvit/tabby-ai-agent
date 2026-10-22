@@ -1,6 +1,6 @@
 {
   "name": "tabby-ai-agent",
-  "version": "1.0.6",
+  "version": "1.0.10",
   "description": "A Tabby terminal plugin that adds an AI assistant side panel to terminal tabs, with chat, terminal context sharing, and tools for reviewing and running terminal commands. The command approval mode is configurable in settings, and the panel shows each command, its risk level, and an explanation before execution. It can connect to cloud models or self-hosted OpenAI-compatible endpoints, which is the preferred option for users who want to keep terminal data on their own infrastructure.",
   "keywords": [
     "tabby-plugin"
