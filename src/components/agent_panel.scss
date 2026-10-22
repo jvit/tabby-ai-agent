@@ -146,8 +146,12 @@
             background: rgba(var(--theme-primary-rgb), 0.1);
             border-color: transparent;
 
-            .message-avatar i {
-                color: var(--theme-fg);
+            .message-avatar {
+                height: 21px; // Match the message text's 14px font and 1.5 line height.
+
+                i {
+                    color: var(--theme-fg);
+                }
             }
         }
 
@@ -163,6 +167,10 @@
         &.reasoning,
         &.tool {
             grid-template-columns: 1fr;
+
+            .message-body {
+                grid-column: 1;
+            }
         }
 
         &.reasoning {
@@ -171,6 +179,10 @@
             border-color: transparent;
 
             &.collapsed {
+                width: fit-content;
+                max-width: 100%;
+                box-sizing: border-box;
+                margin-right: 0;
                 padding-bottom: 8px;
             }
         }
