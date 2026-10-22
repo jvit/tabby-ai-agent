@@ -218,7 +218,7 @@ export class RunShellCommandTool implements Tool {
   private waitForPollIntervalOrForceRead(
     frontend: Frontend,
     signal?: AbortSignal,
-    delayMs = 1000,
+    delayMs = 300,
   ): Promise<boolean> {
     return Promise.race([
       this.sleep(delayMs, signal).then(() => false),
@@ -271,7 +271,7 @@ export class RunShellCommandTool implements Tool {
       !Number.isFinite(waitTimeSeconds) ||
       waitTimeSeconds < 0
     ) {
-      return 700;
+      return 300;
     }
 
     return waitTimeSeconds * 1000;

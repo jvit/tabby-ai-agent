@@ -8,7 +8,7 @@ import {
   ViewChild,
   ElementRef,
 } from "@angular/core";
-import { ConfigService, HotkeysService } from "tabby-core";
+import { ConfigService } from "tabby-core";
 import { BaseTerminalTabComponent, Frontend } from "tabby-terminal";
 import { GetTerminalLinesTool } from "../lib/get_terminal_lines.tool";
 import {
@@ -21,7 +21,6 @@ import { RunShellCommandTool } from "../lib/run_shell_command.tool";
 import { CancelCommandTool } from "../lib/cancel_command.tool";
 import { TerminalContextService } from "../services/terminal_context.service";
 import { AskUserTool } from "../lib/ask_user.tool";
-import { Subscription } from "rxjs";
 
 type ChatRole = "user" | "assistant" | "reasoning" | "tool";
 type ToolCallStatus =
@@ -106,12 +105,10 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
   >();
   private pendingUserInputs = new Map<string, PendingUserInputRequest>();
-  private hotkeySubscription: Subscription | null = null;
 
   constructor(
     private config: ConfigService,
     private terminalContext: TerminalContextService,
-    private hotkeys: HotkeysService,
   ) {}
 
   ngOnInit(): void {
@@ -124,17 +121,11 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.config.store.aiAgent.additionalRequestParameters ??= {};
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
     this.config.store.aiAgent.hideTerminalOutput ??= false;
+    this.migrateForceReadHotkey();
     this.initializeSession();
-    this.hotkeySubscription = this.hotkeys.hotkey$.subscribe((hotkey) => {
-      if (hotkey === "force-read-terminal" && this.frontend) {
-        this.terminalContext.forceReadFor(this.frontend);
-      }
-    });
   }
 
   ngOnDestroy(): void {
-    this.hotkeySubscription?.unsubscribe();
-    this.hotkeySubscription = null;
     this.currentAbortController?.abort();
     this.cancelPendingApprovals();
     this.cancelPendingUserInputs();
@@ -318,6 +309,12 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.cancelPendingUserInputs();
   }
 
+  forceReadNow(): void {
+    if (this.frontend) {
+      this.terminalContext.forceReadFor(this.frontend);
+    }
+  }
+
   handleComposerKeydown(event: KeyboardEvent): void {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -343,11 +340,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     'decline-ai-agent-command': () => this.declineLastPendingCommand(),
     'stop-ai-agent-response': () => this.stopCurrentResponse(),
     'clear-ai-agent-chat': () => this.clearChat(),
-    'force-read-terminal': () => {
-      if (this.frontend) {
-        this.terminalContext.forceReadFor(this.frontend);
-      }
-    },
+    'force-read-terminal': () => this.forceReadNow(),
   };
 
   private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
@@ -502,6 +495,26 @@ export class AIPanelComponent implements OnInit, OnDestroy {
         ? { ...tc, outputCollapsed: !tc.outputCollapsed }
         : tc,
     );
+  }
+
+  private migrateForceReadHotkey(): void {
+    const store = this.config.store as any;
+    const current = store.hotkeys?.["force-read-terminal"] as string[] | undefined;
+    if (!current?.length) {
+      return;
+    }
+
+    const legacy = ["Ctrl-Alt-P", "Cmd-Shift-P"];
+    const migrated = current.map((key) =>
+      legacy.includes(key)
+        ? key.replace(/-P$/, "-Space")
+        : key,
+    );
+
+    if (migrated.some((key, index) => key !== current[index])) {
+      store.hotkeys["force-read-terminal"] = migrated;
+      this.config.save();
+    }
   }
 
   getHotkeyLabel(hotkeyId: string): string {

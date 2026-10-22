@@ -36,7 +36,7 @@ export class AIAgentConfigProvider extends ConfigProvider {
       "approve-ai-agent-command": ["Ctrl-Alt-Enter"],
       "decline-ai-agent-command": ["Ctrl-Alt-Backspace"],
       "clear-ai-agent-chat": ["Ctrl-Alt-C"],
-      "force-read-terminal": ["Ctrl-Alt-P"],
+      "force-read-terminal": ["Ctrl-Alt-Space"],
     },
   };
 
@@ -48,7 +48,7 @@ export class AIAgentConfigProvider extends ConfigProvider {
         "approve-ai-agent-command": ["Cmd-Shift-Enter"],
         "decline-ai-agent-command": ["Cmd-Shift-Backspace"],
         "clear-ai-agent-chat": ["Cmd-Shift-C"],
-        "force-read-terminal": ["Cmd-Shift-P"],
+        "force-read-terminal": ["Cmd-Shift-Space"],
       },
     },
   };

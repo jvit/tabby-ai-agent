@@ -65,6 +65,7 @@ export class AIAgentPanelService implements OnDestroy {
   show(terminal: BaseTerminalTabComponent<any>): void {
     if (this.panelRefs.has(terminal)) {
       const ref = this.panelRefs.get(terminal)!;
+      ref.instance.frontend = terminal.frontend;
       ref.location.nativeElement.style.display = "flex";
       this.ensureLayoutObserver(terminal);
       this.syncLayout(terminal);

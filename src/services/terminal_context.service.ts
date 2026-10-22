@@ -43,13 +43,16 @@ export interface TerminalBufferPosition {
 @Injectable({ providedIn: "root" })
 export class TerminalContextService {
   private forceReadTopic = new Subject<Frontend>();
+  private pendingForceRead = new Set<Frontend>();
 
   /**
    * Signal listeners (e.g. a running run_shell_command wait loop) to read
    * the terminal output immediately instead of waiting for the next poll.
    */
   forceReadFor(frontend: Frontend): void {
+    this.pendingForceRead.add(frontend);
     this.forceReadTopic.next(frontend);
+    setTimeout(() => this.pendingForceRead.delete(frontend), 5000);
   }
 
   /**
@@ -63,19 +66,28 @@ export class TerminalContextService {
     signal?: AbortSignal,
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+      if (this.pendingForceRead.has(frontend)) {
+        this.pendingForceRead.delete(frontend);
+        resolve(true);
+        return;
+      }
+
       const subscription = this.forceReadTopic.subscribe((target) => {
         if (target === frontend) {
+          this.pendingForceRead.delete(target);
           cleanup();
           resolve(true);
         }
       });
 
       const timeout = setTimeout(() => {
+        this.pendingForceRead.delete(frontend);
         cleanup();
         resolve(false);
       }, timeoutMs);
 
       const onAbort = () => {
+        this.pendingForceRead.delete(frontend);
         cleanup();
         resolve(false);
       };
@@ -88,8 +100,7 @@ export class TerminalContextService {
 
       if (signal) {
         if (signal.aborted) {
-          cleanup();
-          resolve(false);
+          onAbort();
         } else {
           signal.addEventListener("abort", onAbort, { once: true });
         }
