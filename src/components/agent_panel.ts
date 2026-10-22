@@ -121,6 +121,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     this.config.store.aiAgent.additionalRequestParameters ??= {};
     this.config.store.aiAgent.additionalSystemPrompt ??= "";
     this.config.store.aiAgent.hideTerminalOutput ??= false;
+    this.migrateForceReadHotkey();
     this.initializeSession();
   }
 
@@ -299,13 +300,19 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     }
 
     this.cancelPendingApprovals();
-    if (this.hasExecutingShellCommand()) {
+    if (this.hasExecutingShellCommand) {
       this.terminal?.sendInput("\x03");
     }
     this.currentAbortController?.abort();
     this.finalizeStreamingDrafts();
     this.markActiveToolCallsStopped();
     this.cancelPendingUserInputs();
+  }
+
+  forceReadNow(): void {
+    if (this.frontend) {
+      this.terminalContext.forceReadFor(this.frontend);
+    }
   }
 
   handleComposerKeydown(event: KeyboardEvent): void {
@@ -333,6 +340,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     'decline-ai-agent-command': () => this.declineLastPendingCommand(),
     'stop-ai-agent-response': () => this.stopCurrentResponse(),
     'clear-ai-agent-chat': () => this.clearChat(),
+    'force-read-terminal': () => this.forceReadNow(),
   };
 
   private matchKeystroke(keystroke: string, event: KeyboardEvent): boolean {
@@ -487,6 +495,26 @@ export class AIPanelComponent implements OnInit, OnDestroy {
         ? { ...tc, outputCollapsed: !tc.outputCollapsed }
         : tc,
     );
+  }
+
+  private migrateForceReadHotkey(): void {
+    const store = this.config.store as any;
+    const current = store.hotkeys?.["force-read-terminal"] as string[] | undefined;
+    if (!current?.length) {
+      return;
+    }
+
+    const legacy = ["Ctrl-Alt-P", "Cmd-Shift-P"];
+    const migrated = current.map((key) =>
+      legacy.includes(key)
+        ? key.replace(/-P$/, "-Space")
+        : key,
+    );
+
+    if (migrated.some((key, index) => key !== current[index])) {
+      store.hotkeys["force-read-terminal"] = migrated;
+      this.config.save();
+    }
   }
 
   getHotkeyLabel(hotkeyId: string): string {
@@ -889,7 +917,7 @@ export class AIPanelComponent implements OnInit, OnDestroy {
     );
   }
 
-  private hasExecutingShellCommand(): boolean {
+  get hasExecutingShellCommand(): boolean {
     return this.toolCalls.some(
       (toolCall) =>
         toolCall.name === "run_shell_command" &&

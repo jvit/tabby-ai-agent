@@ -28,6 +28,15 @@ export class AIAgentPanelService implements OnDestroy {
     }
   >();
   private configSubscription: Subscription;
+  private activeTerminal: BaseTerminalTabComponent<any> | null = null;
+
+  setActive(terminal: BaseTerminalTabComponent<any> | null): void {
+    this.activeTerminal = terminal;
+  }
+
+  isActive(terminal: BaseTerminalTabComponent<any>): boolean {
+    return this.activeTerminal === terminal;
+  }
 
   constructor(
     private appRef: ApplicationRef,
@@ -56,6 +65,7 @@ export class AIAgentPanelService implements OnDestroy {
   show(terminal: BaseTerminalTabComponent<any>): void {
     if (this.panelRefs.has(terminal)) {
       const ref = this.panelRefs.get(terminal)!;
+      ref.instance.frontend = terminal.frontend;
       ref.location.nativeElement.style.display = "flex";
       this.ensureLayoutObserver(terminal);
       this.syncLayout(terminal);

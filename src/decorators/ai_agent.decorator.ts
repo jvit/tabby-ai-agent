@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { HotkeysService } from "tabby-core";
 import { TerminalDecorator, BaseTerminalTabComponent } from "tabby-terminal";
 import { AIAgentPanelService } from "../services/agent_panel.service";
+import { TerminalContextService } from "../services/terminal_context.service";
 
 @Injectable()
 export class AIAgentDecorator extends TerminalDecorator {
@@ -10,6 +11,7 @@ export class AIAgentDecorator extends TerminalDecorator {
   constructor(
     private hotkeys: HotkeysService,
     private panelService: AIAgentPanelService,
+    private terminalContext: TerminalContextService,
   ) {
     super();
   }
@@ -19,17 +21,44 @@ export class AIAgentDecorator extends TerminalDecorator {
     this.attachToolbarButton(terminal);
     this.subscribeUntilDetached(
       terminal,
+      terminal.focused$.subscribe(() => {
+        this.panelService.setActive(terminal);
+      }),
+    );
+
+    this.subscribeUntilDetached(
+      terminal,
+      terminal.destroyed$.subscribe(() => {
+        if (this.panelService.isActive(terminal)) {
+          this.panelService.setActive(null);
+        }
+      }),
+    );
+
+    if (terminal.hasFocus) {
+      this.panelService.setActive(terminal);
+    }
+
+    this.subscribeUntilDetached(
+      terminal,
       this.hotkeys.hotkey$.subscribe((hotkey) => {
+        if (!this.panelService.isActive(terminal)) {
+          return;
+        }
         if (hotkey === "toggle-ai-agent-panel") {
           this.panelService.toggle(terminal);
         } else if (hotkey === "approve-ai-agent-command") {
           this.panelService.approvePendingCommand(terminal);
         } else if (hotkey === "decline-ai-agent-command") {
           this.panelService.declinePendingCommand(terminal);
-        } else if (hotkey === "stop-ai-agent-response" && terminal.hasFocus) {
+        } else if (hotkey === "stop-ai-agent-response") {
           this.panelService.stopCurrentResponse(terminal);
         } else if (hotkey === "clear-ai-agent-chat") {
           this.panelService.clearChat(terminal);
+        } else if (hotkey === "force-read-terminal") {
+          if (terminal.frontend) {
+            this.terminalContext.forceReadFor(terminal.frontend);
+          }
         }
       }),
     );

@@ -55,7 +55,11 @@
       [class.collapsed]="message.collapsed"
       [class.tool]="message.role === 'tool'"
     >
-      <div class="message-header">
+      <span class="message-avatar" *ngIf="message.role === 'user' || message.role === 'assistant'">
+        <i class="fas" [class.fa-user]="message.role === 'user'" [class.fa-robot]="message.role === 'assistant'"></i>
+      </span>
+      <div class="message-body">
+      <div class="message-header" *ngIf="message.role === 'reasoning' || message.role === 'tool' || message.streaming">
         <button
           *ngIf="message.role === 'reasoning'"
           class="reasoning-toggle"
@@ -70,13 +74,7 @@
           ></i>
           <span>Reasoning</span>
         </button>
-        <span class="role" *ngIf="message.role !== 'reasoning'">
-          <ng-container [ngSwitch]="message.role">
-            <span *ngSwitchCase="'user'">You</span>
-            <span *ngSwitchCase="'assistant'">Assistant</span>
-            <span *ngSwitchCase="'tool'">Tool result</span>
-          </ng-container>
-        </span>
+        <span class="role" *ngIf="message.role === 'tool'">Tool result</span>
         <span class="stream-state text-muted" *ngIf="message.streaming">
           streaming
         </span>
@@ -221,6 +219,7 @@
           <span class="dot"></span>
         </div>
       </div>
+      </div>
     </div>
   </div>
 
@@ -237,15 +236,25 @@
       (input)="autoResizeTextarea()"
       (keydown)="handleComposerKeydown($event)"
     ></textarea>
-    <button
-      *ngIf="sending; else sendButton"
-      class="btn btn-outline-danger send-btn"
-      type="button"
-      (click)="stopCurrentResponse()"
-    >
-      Stop
-      <small class="kbd-hint">{{ getHotkeyLabel('stop-ai-agent-response') }}</small>
-    </button>
+      <button
+        *ngIf="sending; else sendButton"
+        class="btn btn-outline-danger send-btn"
+        type="button"
+        (click)="stopCurrentResponse()"
+      >
+        Stop
+        <small class="kbd-hint">{{ getHotkeyLabel('stop-ai-agent-response') }}</small>
+      </button>
+      <button
+        *ngIf="hasExecutingShellCommand"
+        class="btn btn-outline-secondary force-read-btn"
+        type="button"
+        title="Read the current terminal output immediately"
+        (click)="forceReadNow()"
+      >
+        Read output now
+        <small class="kbd-hint">{{ getHotkeyLabel('force-read-terminal') }}</small>
+      </button>
     <ng-template #sendButton>
       <button
         class="btn btn-primary send-btn"

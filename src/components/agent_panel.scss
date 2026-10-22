@@ -104,28 +104,71 @@
 
 
     .message {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: start;
+        column-gap: 10px;
         margin-bottom: 16px;
         padding: 12px;
-        border-radius: 8px;
+        border-radius: 12px;
         border: 1px solid transparent;
+        outline: 1.5px solid rgba(255, 255, 255, 0.13);
         background: var(--theme-bg-more);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+
+        .message-avatar {
+            grid-column: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            line-height: 1;
+            font-size: 11px;
+
+            i {
+                line-height: 1;
+            }
+        }
+
+        .message-body {
+            grid-column: 2;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         &.user {
-            margin-left: 20px;
+            width: fit-content;
+            max-width: calc(100% - 20px);
+            margin-left: auto;
             background: rgba(var(--theme-primary-rgb), 0.1);
-            border-color: rgba(var(--theme-primary-rgb), 0.25);
+            border-color: transparent;
+
+            .message-avatar i {
+                color: var(--theme-fg);
+            }
         }
 
         &.assistant {
             margin-right: 20px;
-            border-color: var(--theme-border);
+            border-color: transparent;
+
+            .message-avatar i {
+                color: var(--theme-primary);
+            }
+        }
+
+        &.reasoning,
+        &.tool {
+            grid-template-columns: 1fr;
         }
 
         &.reasoning {
             margin-right: 40px;
             background: rgba(var(--theme-primary-rgb), 0.06);
-            border-style: dashed;
-            border-color: rgba(var(--theme-primary-rgb), 0.35);
+            border-color: transparent;
 
             &.collapsed {
                 padding-bottom: 8px;
@@ -144,8 +187,6 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        min-height: 16px;
-        margin-bottom: 2px;
         font-size: 12px;
 
         .role {
@@ -300,7 +341,6 @@
     }
 
     .tool-calls {
-        margin-top: 12px;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -451,6 +491,17 @@
                 display: flex;
                 flex-wrap: wrap;
                 gap: 8px;
+
+                button {
+                    --bs-btn-color: var(--theme-primary);
+                    --bs-btn-border-color: var(--theme-primary);
+                    --bs-btn-hover-color: var(--theme-primary-fg);
+                    --bs-btn-hover-bg: var(--theme-primary);
+                    --bs-btn-hover-border-color: var(--theme-primary);
+                    --bs-btn-active-color: var(--theme-primary-fg);
+                    --bs-btn-active-bg: var(--theme-primary);
+                    --bs-btn-active-border-color: var(--theme-primary);
+                }
             }
 
             .ask-user-input-row {
@@ -459,6 +510,21 @@
 
                 input {
                     min-width: 0;
+                }
+
+                button {
+                    --bs-btn-bg: var(--theme-primary);
+                    --bs-btn-border-color: var(--theme-primary);
+                    --bs-btn-color: var(--theme-primary-fg);
+                    --bs-btn-hover-bg: var(--theme-primary);
+                    --bs-btn-hover-border-color: var(--theme-primary);
+                    --bs-btn-hover-color: var(--theme-primary-fg);
+                    --bs-btn-active-bg: var(--theme-primary);
+                    --bs-btn-active-border-color: var(--theme-primary);
+                    --bs-btn-active-color: var(--theme-primary-fg);
+                    --bs-btn-disabled-bg: var(--theme-primary);
+                    --bs-btn-disabled-border-color: var(--theme-primary);
+                    --bs-btn-disabled-opacity: 0.5;
                 }
             }
         }
@@ -579,6 +645,26 @@
             opacity: 0.7;
             line-height: 1;
         }
+    }
+}
+
+.force-read-btn {
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    pointer-events: auto;
+    line-height: 1.4;
+
+    .kbd-hint {
+        font-size: 10px;
+        font-weight: normal;
+        opacity: 0.7;
+        line-height: 1;
+        margin-left: 0;
     }
 }
 
